@@ -37,17 +37,6 @@ Dialog.prototype.getDialogOptions = function(type, options) {
   }
 
   const dialogs = {
-    contentChanged: function() {
-      return {
-        title: 'File changed',
-        message: 'The file has been changed externally.\nWould you like to reload it?',
-        type: 'question',
-        buttons: [
-          { id: 'ok', label: 'Reload' },
-          { id: 'cancel', label: 'Cancel' }
-        ]
-      };
-    },
     exportAs: function(options) {
       ensureOptions([ 'name', 'filters' ], options);
 
