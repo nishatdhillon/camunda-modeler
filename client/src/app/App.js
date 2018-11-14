@@ -177,6 +177,49 @@ export class App extends Component {
     return this.setActiveTab(nextActiveTab);
   }
 
+  checkFileChanged = async (tab) => {
+
+    const {
+      globals
+    } = this.props;
+
+    const {
+      fileSystem
+    } = globals;
+
+    const {
+      file
+    } = tab;
+
+    const tabLastModified = (file || {}).lastModified;
+
+    // skip new file
+    if (isNew(tab) || typeof tabLastModified === 'undefined') {
+      return;
+    }
+
+    const {
+      lastModified
+    } = await fileSystem.readFileStats(file);
+
+    // skip unchanged
+    if (!(lastModified > tabLastModified)) {
+      return;
+    }
+
+    const answer = await this.showDialog(getContentChangedDialog());
+
+    if (answer == 'ok') {
+      const updatedFile = await fileSystem.readFile(file.path);
+
+      assign(file, updatedFile);
+
+      await this.workspaceChanged();
+      await this.handleTabChanged(tab)();
+    }
+
+  }
+
   setActiveTab(tab) {
 
     const {
@@ -281,7 +324,8 @@ export class App extends Component {
     });
   }
 
-  selectTab = tab => {
+  selectTab = async tab => {
+    await this.checkFileChanged(tab);
     return this.setActiveTab(tab);
   }
 
@@ -1105,6 +1149,10 @@ export class App extends Component {
       this.openExternalUrl(options);
     }
 
+    if (action === 'check-file-changed') {
+      return this.checkFileChanged(activeTab);
+    }
+
     const tab = this.tabRef.current;
 
     return tab.triggerAction(action, options);
@@ -1354,4 +1402,16 @@ function getOpenFileErrorDialog(options) {
 
 function getFileTypeFromExtension(filePath) {
   return filePath.split('.').pop();
+}
+
+function getContentChangedDialog() {
+  return {
+    title: 'File changed',
+    message: 'The file has been changed externally.\nWould you like to reload it?',
+    type: 'question',
+    buttons: [
+      { id: 'ok', label: 'Reload' },
+      { id: 'cancel', label: 'Cancel' }
+    ]
+  };
 }

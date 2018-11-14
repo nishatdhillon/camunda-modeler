@@ -22,6 +22,9 @@ import {
 
 import pDefer from 'p-defer';
 
+import {
+  assign
+} from 'min-dash';
 
 /* global sinon */
 const { spy } = sinon;
@@ -1268,6 +1271,165 @@ describe('<App>', function() {
   });
 
 
+  describe('#checkFileChanged', function() {
+
+    const NEW_FILE_CONTENTS = 'bar';
+
+    let file1, file2, fileSystem, readFileSpy;
+
+    beforeEach(function() {
+
+      file1 = createFile('1.bpmn', 'foo', 'foo', 0);
+      file2 = createFile('2.bpmn', 'foobar');
+
+      readFileSpy = spy(_ => {
+        return assign(file1, {
+          contents: NEW_FILE_CONTENTS
+        });
+      });
+
+      fileSystem = new FileSystem({
+        readFile: readFileSpy
+      });
+    });
+
+
+    it('should notify if content changed', async function() {
+
+      // given
+      const showSpy = spy(_ => {
+        return 'ok';
+      });
+
+      const dialog = new Dialog({
+        show: showSpy
+      });
+
+      fileSystem.setReadFileStatsResponse({
+        lastModified: new Date().getMilliseconds()
+      });
+
+      const { app } = createApp({
+        globals: {
+          dialog,
+          fileSystem
+        }
+      });
+
+      const openedTabs = await app.openFiles([ file1, file2 ]);
+
+      const tab = openedTabs[0];
+
+      const oldTabContents = tab.file.contents;
+
+      // when
+      await app.checkFileChanged(tab);
+
+      // then
+      expect(showSpy).to.have.been.called;
+      expect(readFileSpy).to.have.been.called;
+      expect(tab.file.contents).to.not.equal(oldTabContents);
+      expect(tab.file.contents).to.equal(NEW_FILE_CONTENTS);
+    });
+
+
+    it('should NOT notify if content not changed', async function() {
+
+      // given
+      const showSpy = spy();
+
+      const dialog = new Dialog({
+        show: showSpy
+      });
+
+      fileSystem.setReadFileStatsResponse({
+        lastModified: 0
+      });
+
+      const { app } = createApp({
+        globals: {
+          dialog,
+          fileSystem
+        }
+      });
+
+      const openedTabs = await app.openFiles([ file1, file2 ]);
+
+      const tab = openedTabs[0];
+
+      // when
+      await app.checkFileChanged(tab);
+
+      // then
+      expect(showSpy).to.not.have.been.called;
+      expect(readFileSpy).to.not.have.been.called;
+    });
+
+
+    it('should NOT notify on new file', async function() {
+
+      // given
+      const showSpy = spy();
+
+      const dialog = new Dialog({
+        show: showSpy
+      });
+
+      const { app } = createApp({
+        globals: {
+          dialog,
+          fileSystem
+        }
+      });
+
+      // when
+      await app.openFiles([ file1, file2 ]);
+
+      // then
+      expect(showSpy).to.not.have.been.called;
+      expect(readFileSpy).to.not.have.been.called;
+    });
+
+
+    it('should NOT update file contents on cancelling', async function() {
+
+      // given
+      const showSpy = spy(_ => {
+        return 'cancel';
+      });
+
+      const dialog = new Dialog({
+        show: showSpy
+      });
+
+      fileSystem.setReadFileStatsResponse({
+        lastModified: new Date().getMilliseconds()
+      });
+
+      const { app } = createApp({
+        globals: {
+          dialog,
+          fileSystem
+        }
+      });
+
+      const openedTabs = await app.openFiles([ file1, file2 ]);
+
+      const tab = openedTabs[0];
+
+      const oldTabContents = tab.file.contents;
+
+      // when
+      await app.checkFileChanged(tab);
+
+      // then
+      expect(showSpy).to.have.been.called;
+      expect(readFileSpy).to.not.have.been.called;
+      expect(tab.file.contents).to.equal(oldTabContents);
+    });
+
+  });
+
   describe('#showOpenFilesDialog', function() {
 
     it('should open dialog and open files', async function() {
@@ -1464,13 +1626,14 @@ function createApp(options = {}, mountFn=shallow) {
 }
 
 
-function createFile(name, path, contents = 'foo') {
+function createFile(name, path, contents = 'foo', lastModified) {
 
   path = typeof path === 'undefined' ? name : path;
 
   return {
+    contents,
     name,
     path,
-    contents
+    lastModified
   };
 }
