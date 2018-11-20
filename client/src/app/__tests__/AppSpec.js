@@ -1314,7 +1314,7 @@ describe('<App>', function() {
           dialog,
           fileSystem
         }
-      });
+      }, mount);
 
       const openedTabs = await app.openFiles([ file1, file2 ]);
 

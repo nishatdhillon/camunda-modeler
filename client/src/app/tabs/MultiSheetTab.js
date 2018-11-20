@@ -206,6 +206,11 @@ export class MultiSheetTab extends CachedComponent {
       const { fileType } = options;
 
       return await editor.exportAs(fileType);
+    } else if (action === 'set-last-xml') {
+
+      this.setCached({
+        lastXML: options.xml
+      });
     }
 
     return editor.triggerAction(action, options);

@@ -216,6 +216,7 @@ export class App extends Component {
 
       await this.workspaceChanged();
       await this.handleTabChanged(tab)();
+      await this.tabRef.current.triggerAction('set-last-xml', updatedFile.contents);
     }
 
   }
