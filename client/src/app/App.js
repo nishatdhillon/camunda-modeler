@@ -209,16 +209,37 @@ export class App extends Component {
 
     const answer = await this.showDialog(getContentChangedDialog());
 
-    if (answer == 'ok') {
+    if (answer === 'ok') {
       const updatedFile = await fileSystem.readFile(file.path);
 
-      assign(file, updatedFile);
-
-      await this.workspaceChanged();
-      await this.handleTabChanged(tab)();
-      await this.tabRef.current.triggerAction('set-last-xml', updatedFile.contents);
+      this.updateTab(tab, {
+        file: {
+          updatedFile
+        }
+      });
     }
 
+  }
+
+  /**
+   * Update the tab with new attributes.
+   *
+   * @param  {Object} tab
+   * @param  {Object} newAttrs
+   */
+  updateTab(tab, newAttrs) {
+
+    if (newAttrs.id && newAttrs.id !== tab.id) {
+      throw new Error('must not change tab.id');
+    }
+
+    // updatedTab = { ...tab, newAttrs }
+    //
+    // replace all occurences of 'tab' in app state (history, activeTab, tabs, openedTabs)
+    // with updatedTab
+    //
+    // ooops, where is the tab referenced right now? need to find all occurences
+    // and update the tab respectively
   }
 
   setActiveTab(tab) {
