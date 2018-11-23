@@ -42,7 +42,7 @@ class DeployDiagramModal extends React.Component {
       this.setState({
         isLoading: false,
         success: '',
-        error: error.message
+        error
       });
     }
   }

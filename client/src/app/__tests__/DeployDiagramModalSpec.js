@@ -20,7 +20,7 @@ describe('<DeployDiagramModal>', function() {
     // given
     const errorMessage = 'error';
 
-    const onDeployStub = sinon.stub().throws({ message: errorMessage });
+    const onDeployStub = sinon.stub().returns(Promise.reject(errorMessage));
 
     const wrapper = shallow(<DeployDiagramModal onDeploy={ onDeployStub } />);
     const instance = wrapper.instance();
