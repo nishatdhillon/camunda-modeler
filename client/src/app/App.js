@@ -19,6 +19,8 @@ import Log from './Log';
 
 import debug from 'debug';
 
+import { ModalConductor } from './modals';
+
 import {
   Button,
   DropdownButton,
@@ -57,7 +59,8 @@ const INITIAL_STATE = {
   layout: {},
   tabs: [],
   tabState: {},
-  logEntries: []
+  logEntries: [],
+  currentModal: null
 };
 
 
@@ -1095,9 +1098,18 @@ export class App extends Component {
       return this.showDialog(options);
     }
 
+    if (action === 'open-modal') {
+      return this.setModal(options);
+    }
+
+    if (action === 'close-modal') {
+      return this.setModal(null);
+    }
+
     if (action === 'open-external-url') {
       this.openExternalUrl(options);
     }
+
 
     const tab = this.tabRef.current;
 
@@ -1107,6 +1119,16 @@ export class App extends Component {
   openExternalUrl(options) {
     this.props.globals.backend.send('external:open-url', options);
   }
+
+  openModal = modal => this.triggerAction('open-modal', modal);
+
+  closeModal = () => this.triggerAction('close-modal');
+
+  setModal = currentModal => this.setState({ currentModal });
+
+  handleDeploy = options => {
+    return this.props.globals.backend.send('deploy', { ...options, file: this.state.activeTab.file });
+  };
 
   quit() {
     return true;
@@ -1244,6 +1266,7 @@ export class App extends Component {
                   onLayoutChanged={ this.handleLayoutChanged }
                   onContextMenu={ this.openTabMenu }
                   onAction={ this.triggerAction }
+                  onModal={ this.openModal }
                   ref={ this.tabRef }
                 />
               }
@@ -1257,6 +1280,12 @@ export class App extends Component {
             onClear={ this.clearLog }
           />
         </SlotFillRoot>
+
+        <ModalConductor
+          currentModal={ this.state.currentModal }
+          onClose={ this.composeAction('close-modal') }
+          onDeploy={ this.handleDeploy }
+        />
       </div>
     );
   }
